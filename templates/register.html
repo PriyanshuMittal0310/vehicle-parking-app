@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h3 class="mb-4 text-center">User Sign-up</h3>
+    <!-- Bootstrap form layout inspired by MDBootstrap example [3] -->
+    <form method="post">
+      <div class="mb-3">
+        <label>Email</label>
+        <input name="email" type="email" class="form-control" required>
+      </div>
+
+      <div class="mb-3">
+        <label>Password</label>
+        <input name="password" type="password" class="form-control" required>
+      </div>
+
+      <div class="mb-3">
+        <label>Full name</label>
+        <input name="full_name" type="text" class="form-control" required>
+      </div>
+
+      <div class="mb-3">
+        <label>Address</label>
+        <input name="address" type="text" class="form-control">
+      </div>
+
+      <div class="mb-3">
+        <label>Phone</label>
+        <input name="phone" type="text" class="form-control">
+      </div>
+
+      <div class="mb-3">
+        <label>PIN code</label>
+        <input name="pin_code" type="text" class="form-control">
+      </div>
+
+      <button class="btn btn-primary w-100">Register</button>
+      <p class="text-center mt-3">
+        Already registered? <a href="{{ url_for('login') }}">Log in</a>
+      </p>
+    </form>
+  </div>
+</div>
+{% endblock %}
