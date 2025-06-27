@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Parking Lots{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Parking Lots</h3>
+  <a class="btn btn-success" href="{{ url_for('add_lot') }}">+ Add Lot</a>
+</div>
+
+<table class="table table-striped align-middle">
+  <thead>
+    <tr>
+      <th>ID</th><th>Name</th><th>Address</th><th>Spots</th>
+      <th>Price/hr</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for lot in lots %}
+    <tr>
+      <td>{{ lot.id }}</td>
+      <td>{{ lot.name }}</td>
+      <td>{{ lot.address_line_1 }} {{ lot.pin_code }}</td>
+      <td>{{ lot.number_of_spots }}</td>
+      <td>₹{{ '%.2f'|format(lot.price_per_hour) }}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-primary"
+           href="{{ url_for('lot_spots', lot_id=lot.id) }}">Spots</a>
+        <a class="btn btn-sm btn-outline-secondary"
+           href="{{ url_for('edit_lot', lot_id=lot.id) }}">Edit</a>
+        <form class="d-inline" method="post"
+              action="{{ url_for('delete_lot', lot_id=lot.id) }}"
+              onsubmit="return confirm('Delete this lot?');">
+          <button class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

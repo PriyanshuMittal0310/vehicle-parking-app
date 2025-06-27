@@ -3,61 +3,60 @@ from enum import Enum
 from pathlib import Path
 
 from sqlalchemy import (
-    Column,
-    DateTime,
-    Enum as PgEnum,
-    ForeignKey,
-    Integer,
-    Numeric,
-    String,
-    create_engine,
-    func,
+    Column, DateTime, Enum as PgEnum, ForeignKey, Integer,
+    Numeric, String, create_engine, event, func
 )
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import (
+    declarative_base, relationship, sessionmaker, object_session
+)
 
+# ────────────────────────────────────────────────────────────────
+# DB bootstrap
+# ────────────────────────────────────────────────────────────────
 DB_PATH = Path(__file__).with_suffix(".db")
 engine  = create_engine(f"sqlite:///{DB_PATH}", echo=False, future=True)
 Base    = declarative_base()
 
-# 2. Enum helpers
-
+# ────────────────────────────────────────────────────────────────
+# Enum
+# ────────────────────────────────────────────────────────────────
 class SpotStatus(str, Enum):
     AVAILABLE = "available"
     RESERVED  = "reserved"
     OCCUPIED  = "occupied"
 
-# 3. ORM classes
-
+# ────────────────────────────────────────────────────────────────
+# ORM entities
+# ────────────────────────────────────────────────────────────────
 class User(Base):
     __tablename__ = "users"
 
     id         = Column(Integer, primary_key=True)
-    email      = Column(String, unique=True, nullable=False)
-    password   = Column(String, nullable=False)         
-    full_name  = Column(String, nullable=False)
+    email      = Column(String, unique=True,  nullable=False)
+    password   = Column(String,           nullable=False)      # plaintext (demo)
+    full_name  = Column(String,           nullable=False)
     address    = Column(String)
     phone      = Column(String)
     pin_code   = Column(String(10))
     created_at = Column(DateTime, server_default=func.now())
 
-    reservations = relationship("Reservation", back_populates="user",
-                                cascade="all, delete-orphan")
+    reservations = relationship(
+        "Reservation", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
-        return f"<User {self.email!r}>"
-
+        return f"<User {self.id} {self.email}>"
 
 class Admin(Base):
     __tablename__ = "admins"
 
     id        = Column(Integer, primary_key=True)
     email     = Column(String, unique=True, nullable=False)
-    password  = Column(String, nullable=False)           
+    password  = Column(String, nullable=False)
     full_name = Column(String, nullable=False)
 
     def __repr__(self):
-        return f"<Admin {self.email!r}>"
-
+        return f"<Admin {self.id} {self.email}>"
 
 class ParkingLot(Base):
     __tablename__ = "parking_lots"
@@ -71,12 +70,22 @@ class ParkingLot(Base):
     price_per_hour  = Column(Numeric(10, 2), nullable=False)
     number_of_spots = Column(Integer, nullable=False)
 
-    spots = relationship("ParkingSpot", back_populates="parking_lot",
-                         cascade="all, delete-orphan")
+    spots = relationship(
+        "ParkingSpot", back_populates="parking_lot", cascade="all, delete-orphan"
+    )
 
+    def create_initial_spots(self):
+        if not self.number_of_spots or self.number_of_spots <= 0:
+            return
+    
+        for i in range(1, self.number_of_spots + 1):
+            spot = ParkingSpot(
+            spot_number=str(i).zfill(3),
+            parking_lot=self,
+            status=SpotStatus.AVAILABLE
+        )
     def __repr__(self):
-        return f"<ParkingLot {self.name!r} – {self.pin_code}>"
-
+        return f"<Lot {self.id} {self.name}>"
 
 class ParkingSpot(Base):
     __tablename__ = "parking_spots"
@@ -84,60 +93,64 @@ class ParkingSpot(Base):
     id             = Column(Integer, primary_key=True)
     spot_number    = Column(String, nullable=False)
     status         = Column(PgEnum(SpotStatus),
-                            default=SpotStatus.AVAILABLE,
-                            nullable=False)
-    parking_lot_id = Column(Integer, ForeignKey("parking_lots.id"),
-                            nullable=False)
+                            default=SpotStatus.AVAILABLE, nullable=False)
+    parking_lot_id = Column(Integer, ForeignKey("parking_lots.id"), nullable=False)
 
     parking_lot  = relationship("ParkingLot", back_populates="spots")
-    reservations = relationship("Reservation", back_populates="parking_spot",
-                                cascade="all, delete-orphan")
+    reservations = relationship(
+        "Reservation", back_populates="parking_spot", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
-        return f"<ParkingSpot {self.spot_number} ({self.status})>"
-
+        return f"<Spot {self.id} #{self.spot_number} {self.status}>"
 
 class Reservation(Base):
     __tablename__ = "reservations"
 
     id              = Column(Integer, primary_key=True)
     user_id         = Column(Integer, ForeignKey("users.id"), nullable=False)
-    parking_spot_id = Column(Integer, ForeignKey("parking_spots.id"),
-                             nullable=False)
+    parking_spot_id = Column(Integer, ForeignKey("parking_spots.id"), nullable=False)
+    vehicle_number  = Column(String, nullable=False)
+    start_time      = Column(DateTime, default=datetime.utcnow, nullable=False)
+    end_time        = Column(DateTime)                          # NULL → active
 
-    vehicle_number = Column(String, nullable=False)
-    start_time     = Column(DateTime, default=datetime.utcnow, nullable=False)
-    end_time       = Column(DateTime)  # NULL → still active
-
-    user         = relationship("User", back_populates="reservations")
-    parking_spot = relationship("ParkingSpot", back_populates="reservations")
+    user         = relationship("User",         back_populates="reservations")
+    parking_spot = relationship("ParkingSpot",  back_populates="reservations")
 
     def __repr__(self):
-        return (f"<Reservation {self.id} User={self.user_id} "
-                f"Spot={self.parking_spot_id} Vehicle={self.vehicle_number}>")
+        return f"<Res {self.id} user={self.user_id} spot={self.parking_spot_id}>"
 
-# 4. Schema creation helper
+# ────────────────────────────────────────────────────────────────
+# Listener: auto-create ParkingSpot rows
+# ────────────────────────────────────────────────────────────────
+def _create_spots(target, value, oldvalue, *_):
+    if not isinstance(value, int) or value <= 0:
+        return
+        
+    previous = oldvalue if isinstance(oldvalue, int) else 0
+    if value <= previous:  # capacity didn't grow
+        return
 
+    sess = object_session(target)
+    if sess is None:  # lot not yet attached
+        return
+
+    # Create additional spots
+    for i in range(previous + 1, value + 1):
+        sess.add(
+            ParkingSpot(
+                spot_number=str(i).zfill(3),
+                parking_lot=target,
+                status=SpotStatus.AVAILABLE,
+            )
+        )
+
+# ────────────────────────────────────────────────────────────────
+# Helper
+# ────────────────────────────────────────────────────────────────
 def create_db() -> None:
     Base.metadata.create_all(engine)
-    print(f"Database ready at {DB_PATH.resolve()}")
-
-# 5. Quick smoke test & default admin seeding
+    print(f"✅  DB ready at {DB_PATH.resolve()}")
 
 if __name__ == "__main__":
     create_db()
-
-    Session = sessionmaker(bind=engine, future=True)
-    with Session() as session:
-        if not session.query(Admin).first():
-            session.add(
-                Admin(
-                    email="admin@vps.local",
-                    password="admin123",     
-                    full_name="Super Admin",
-                )
-            )
-            session.commit()
-            print("Inserted default administrator.")
-
-        print("Schema OK – you can now start developing the REST / UI layer.")

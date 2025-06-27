@@ -1,6 +1,26 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block title %}Admin Dashboard{% endblock %}
 {% block content %}
-<h4 class="mb-3">Administrator Panel</h4>
-<p>Manage parking lots, users, reports …</p>
+<h3>Admin Dashboard</h3>
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card h-100 text-bg-primary">
+      <div class="card-body d-flex flex-column justify-content-between">
+        <h5 class="card-title">Parking Lots</h5>
+        <p class="card-text small">Create / edit lots and monitor their spots.</p>
+        <a class="btn btn-light w-100" href="{{ url_for('list_lots') }}">Manage</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card h-100 text-bg-secondary">
+      <div class="card-body d-flex flex-column justify-content-between">
+        <h5 class="card-title">Users</h5>
+        <p class="card-text small">List of all registered users and current reservations.</p>
+        <a class="btn btn-light w-100" href="{{ url_for('list_users') }}">View</a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

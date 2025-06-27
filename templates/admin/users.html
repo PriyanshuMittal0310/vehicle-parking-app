@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h3>Registered Users</h3>
+<table class="table table-bordered table-sm align-middle">
+  <thead class="table-light">
+    <tr>
+      <th>#</th><th>Full Name</th><th>E-mail</th><th>Phone</th>
+      <th>Current Spot</th><th>Since</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for user, res in users %}
+    <tr>
+      <td>{{ user.id }}</td>
+      <td>{{ user.full_name }}</td>
+      <td>{{ user.email }}</td>
+      <td>{{ user.phone or '-' }}</td>
+      {% if res %}
+        <td>{{ res.parking_spot.spot_number }} (Lot #{{ res.parking_spot.parking_lot_id }})</td>
+        <td>{{ res.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+      {% else %}
+        <td colspan="2" class="text-center text-muted">— not parked —</td>
+      {% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

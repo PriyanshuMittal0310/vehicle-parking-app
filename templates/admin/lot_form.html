@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Lot{% endblock %}
+{% block content %}
+<h3>{{ action }} Parking Lot</h3>
+<form method="post" class="w-50">
+  <div class="mb-3">
+    <label class="form-label">Lot Name</label>
+    <input name="name" class="form-control"
+           value="{{ lot.name if lot else '' }}" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Address line 1</label>
+    <input name="addr1" class="form-control"
+           value="{{ lot.address_line_1 if lot else '' }}" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Address line 2</label>
+    <input name="addr2" class="form-control"
+           value="{{ lot.address_line_2 if lot else '' }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Address line 3</label>
+    <input name="addr3" class="form-control"
+           value="{{ lot.address_line_3 if lot else '' }}">
+  </div>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Pin code</label>
+      <input name="pin" class="form-control"
+             value="{{ lot.pin_code if lot else '' }}" required>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Price / hour (₹)</label>
+      <input name="price" type="number" step="0.01" min="0"
+             class="form-control"
+             value="{{ lot.price_per_hour if lot else '' }}" required>
+    </div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Capacity (# of spots)</label>
+    <input name="capacity" type="number" min="1" class="form-control"
+           value="{{ lot.number_of_spots if lot else '' }}" required>
+  </div>
+  <button class="btn btn-primary">{{ action }}</button>
+  <a class="btn btn-secondary" href="{{ url_for('list_lots') }}">Cancel</a>
+</form>
+{% endblock %}

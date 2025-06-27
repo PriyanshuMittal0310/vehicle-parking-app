@@ -1,44 +1,17 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block title %}Login{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-5">
-    <h3 class="text-center mb-4">Sign in</h3>
-
-    <!-- unified admin / user login form -->
-    <form method="post" action="{{ url_for('login') }}" novalidate>
-      <!-- e-mail / username -->
-      <div class="mb-3">
-        <label for="email" class="form-label">Registered E-mail</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          class="form-control"
-          required>
-      </div>
-
-      <!-- password -->
-      <div class="mb-4">
-        <label for="password" class="form-label">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          class="form-control"
-          required>
-      </div>
-
-      <!-- submit -->
-      <button class="btn btn-success w-100">Login</button>
-
-      <!-- helpers -->
-      <div class="text-center mt-3">
-        <span class="me-2">New user?</span>
-        <a href="{{ url_for('register') }}">Create account</a>
-      </div>
-    </form>
+<h3>Login</h3>
+<form method="post" class="w-25">
+  <div class="mb-3">
+    <label class="form-label">E-mail</label>
+    <input name="email" type="email" class="form-control" required>
   </div>
-</div>
+  <div class="mb-3">
+    <label class="form-label">Password</label>
+    <input name="password" type="password" class="form-control" required>
+  </div>
+  <button class="btn btn-primary">Login</button>
+  <a class="btn btn-link" href="{{ url_for('register') }}">Sign-up</a>
+</form>
 {% endblock %}
