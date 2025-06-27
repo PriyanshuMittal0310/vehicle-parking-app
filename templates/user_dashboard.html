@@ -1,7 +1,146 @@
-{% extends 'base.html' %}
-{% block title %}User Dashboard{% endblock %}
-{% block content %}
-<h3>Welcome, {{ session.get('role')|capitalize }}!</h3>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Vehicle Parking System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('user_dashboard') }}">
+                <i class="bi bi-car-front me-2"></i>Vehicle Parking System
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
 
-<p class="text-muted">User-side features (booking, release, history) go here.</p>
-{% endblock %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="bi bi-speedometer2 me-2"></i>User Dashboard
+                </h1>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle me-2"></i>{{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Quick Actions Card -->
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-lightning me-2"></i>Quick Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('user_view_lots') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-geo-alt me-2"></i>View Available Parking Lots
+                            </a>
+                            <a href="{{ url_for('parking_history') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-clock-history me-2"></i>View Parking History
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Reservation Card -->
+            <div class="col-md-6 mb-4">
+                {% if current_reservation %}
+                <div class="card shadow-sm border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-bookmark-check me-2"></i>Current Reservation
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Spot:</strong></div>
+                            <!-- FIXED: Use parking_spot instead of spot -->
+                            <div class="col-sm-8">{{ current_reservation.parking_spot.spot_number }}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Parking Lot:</strong></div>
+                            <!-- FIXED: Use parking_spot instead of spot -->
+                            <div class="col-sm-8">{{ current_reservation.parking_spot.parking_lot.name }}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Reserved At:</strong></div>
+                            <div class="col-sm-8">{{ current_reservation.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                        </div>
+                        
+                        <!-- FIXED: Use parking_spot instead of spot -->
+                        {% if current_reservation.parking_spot.status.value == 'reserved' %}
+                            <div class="alert alert-warning mb-3">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>RESERVED</strong> - Please park your vehicle and mark as occupied.
+                            </div>
+                            <form method="POST" action="{{ url_for('occupy_spot', reservation_id=current_reservation.id) }}">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-car-front me-2"></i>Mark as Occupied
+                                </button>
+                            </form>
+                        {% elif current_reservation.parking_spot.status.value == 'occupied' %}
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>OCCUPIED</strong> - Your vehicle is parked.
+                            </div>
+                            {% if current_reservation.occupy_time %}
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Occupied At:</strong></div>
+                                <div class="col-sm-8">{{ current_reservation.occupy_time.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                            </div>
+                            {% endif %}
+                            <p class="text-muted mb-3">When you leave, please release the spot.</p>
+                            <form method="POST" action="{{ url_for('release_spot', reservation_id=current_reservation.id) }}">
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="bi bi-door-open me-2"></i>Release Spot
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-info-circle me-2"></i>No Active Reservation
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <i class="bi bi-car-front display-1 text-muted mb-3"></i>
+                        <p class="text-muted mb-3">You don't have any active parking reservations.</p>
+                        <a href="{{ url_for('user_view_lots') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Reserve a Parking Spot
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Parking Lots - Vehicle Parking System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('user_dashboard') }}">
+                <i class="bi bi-car-front me-2"></i>Vehicle Parking System
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('user_dashboard') }}">
+                    <i class="bi bi-house"></i> Dashboard
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>
+                        <i class="bi bi-geo-alt me-2"></i>Available Parking Lots
+                    </h1>
+                    <a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle me-2"></i>{{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+
+        <div class="row">
+            {% for data in lots_data %}
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-building me-2"></i>{{ data.lot.name }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-sm-4"><strong>Address:</strong></div>
+                            <div class="col-sm-8">
+                                {{ data.lot.address_line_1 }}
+                                {% if data.lot.address_line_2 %}<br>{{ data.lot.address_line_2 }}{% endif %}
+                                {% if data.lot.address_line_3 %}<br>{{ data.lot.address_line_3 }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4"><strong>Pin Code:</strong></div>
+                            <div class="col-sm-8">{{ data.lot.pin_code }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4"><strong>Price per Hour:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge bg-success">${{ data.lot.price_per_hour }}</span>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4"><strong>Total Spots:</strong></div>
+                            <div class="col-sm-8">{{ data.lot.number_of_spots }}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Available:</strong></div>
+                            <div class="col-sm-8">
+                                {% if data.available_spots > 0 %}
+                                    <span class="badge bg-success fs-6">
+                                        <i class="bi bi-check-circle me-1"></i>{{ data.available_spots }} spots
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="bi bi-x-circle me-1"></i>Full
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        {% if data.available_spots > 0 %}
+                            <form method="POST" action="{{ url_for('reserve_spot', lot_id=data.lot.id) }}">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-bookmark-plus me-2"></i>Reserve First Available Spot
+                                </button>
+                            </form>
+                        {% else %}
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i class="bi bi-x-circle me-2"></i>No Available Spots
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not lots_data %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-building display-1 text-muted mb-3"></i>
+                        <h3 class="text-muted">No Parking Lots Available</h3>
+                        <p class="text-muted">Please check back later for available parking lots.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
