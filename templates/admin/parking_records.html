@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking Records - Admin VPS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('admin_dashboard') }}">
+                <i class="fas fa-shield-alt"></i> VPS Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                <a class="nav-link" href="{{ url_for('list_lots') }}">Parking Lots</a>
+                <a class="nav-link" href="{{ url_for('list_users') }}">Users</a>
+                <a class="nav-link active" href="{{ url_for('admin_parking_records') }}">Records</a>
+                <a class="nav-link" href="{{ url_for('admin_summary') }}">Summary</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-table"></i> Parking Records
+                        </h5>
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge bg-primary">{{ total_records }} total records</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filters -->
+                <form method="GET" class="row g-3 mb-4">
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+                            <option value="completed" {% if filters.status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">From Date</label>
+                        <input type="date" name="date_from" class="form-control" value="{{ filters.date_from or '' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">To Date</label>
+                        <input type="date" name="date_to" class="form-control" value="{{ filters.date_to or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{{ url_for('admin_parking_records') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Records Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Parking Lot</th>
+                                <th>Spot</th>
+                                <th>Vehicle</th>
+                                <th>Start Time</th>
+                                <th>Duration</th>
+                                <th>Cost</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                                <tr>
+                                    <td><strong>#{{ record.reservation.id }}</strong></td>
+                                    <td>
+                                        <div>{{ record.reservation.user.full_name }}</div>
+                                        <small class="text-muted">{{ record.reservation.user.email }}</small>
+                                    </td>
+                                    <td>
+                                        <div>{{ record.reservation.parking_spot.parking_lot.name }}</div>
+                                        <small class="text-muted">{{ record.reservation.parking_spot.parking_lot.address_line_1 }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ record.reservation.parking_spot.spot_number }}</span>
+                                    </td>
+                                    <td>{{ record.reservation.vehicle_number }}</td>
+                                    <td>
+                                        <div>{{ record.reservation.start_time.strftime('%Y-%m-%d') }}</div>
+                                        <small class="text-muted">{{ record.reservation.start_time.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if record.duration_minutes > 0 %}
+                                            <strong>{{ record.duration_formatted }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">{{ record.duration_formatted }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.cost > 0 %}
+                                            <strong class="text-success">${{ "%.2f"|format(record.cost) }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.status == 'Completed' %}
+                                            <span class="badge bg-success">{{ record.status }}</span>
+                                        {% elif record.status == 'Occupied' %}
+                                            <span class="badge bg-warning">{{ record.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">{{ record.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted">No records found.</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

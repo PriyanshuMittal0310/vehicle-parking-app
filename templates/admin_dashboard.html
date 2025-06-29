@@ -1,26 +1,106 @@
 {% extends 'base.html' %}
-{% block title %}Admin Dashboard{% endblock %}
-{% block content %}
-<h3>Admin Dashboard</h3>
-<div class="row g-4">
-  <div class="col-md-4">
-    <div class="card h-100 text-bg-primary">
-      <div class="card-body d-flex flex-column justify-content-between">
-        <h5 class="card-title">Parking Lots</h5>
-        <p class="card-text small">Create / edit lots and monitor their spots.</p>
-        <a class="btn btn-light w-100" href="{{ url_for('list_lots') }}">Manage</a>
-      </div>
-    </div>
-  </div>
 
-  <div class="col-md-4">
-    <div class="card h-100 text-bg-secondary">
-      <div class="card-body d-flex flex-column justify-content-between">
-        <h5 class="card-title">Users</h5>
-        <p class="card-text small">List of all registered users and current reservations.</p>
-        <a class="btn btn-light w-100" href="{{ url_for('list_users') }}">View</a>
-      </div>
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Admin Dashboard</h2>
+    
+    <!-- Quick Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <h3>{{ stats.total_users }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Parking Lots</h5>
+                    <h3>{{ stats.total_lots }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Active Reservations</h5>
+                    <h3>{{ stats.active_reservations }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Available Spots</h5>
+                    <h3>{{ stats.available_spots }}/{{ stats.total_spots }}</h3>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+
+    <!-- Navigation Menu -->
+    <div class="row">
+        <div class="col-md-12">
+            <h4>Administration Menu</h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Parking Management -->
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Parking Management</h5>
+                </div>
+                <div class="card-body">
+                    <p>Create, edit, and monitor parking lots and their spots.</p>
+                    <a href="{{ url_for('list_lots') }}" class="btn btn-primary">Manage Parking Lots</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management -->
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5>User Management</h5>
+                </div>
+                <div class="card-body">
+                    <p>View all registered users and their current reservations.</p>
+                    <a href="{{ url_for('list_users') }}" class="btn btn-primary">View Users</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parking Records -->
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Parking Records</h5>
+                </div>
+                <div class="card-body">
+                    <p>View detailed parking history and reservation records.</p>
+                    <a href="{{ url_for('admin_parking_records') }}" class="btn btn-success">View Parking Records</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Summary -->
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5>System Summary</h5>
+                </div>
+                <div class="card-body">
+                    <p>View comprehensive system statistics and revenue reports.</p>
+                    <a href="{{ url_for('admin_summary') }}" class="btn btn-info">View Summary</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

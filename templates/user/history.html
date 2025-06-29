@@ -3,139 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parking History - Vehicle Parking System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <title>Parking History - VPS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-light">
-    <!-- Navigation -->
+<body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('user_dashboard') }}">
-                <i class="bi bi-car-front me-2"></i>Vehicle Parking System
+                <i class="fas fa-parking"></i> VPS
             </a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="{{ url_for('user_dashboard') }}">
-                    <i class="bi bi-house"></i> Dashboard
-                </a>
-                <a class="nav-link" href="{{ url_for('logout') }}">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
+                <a class="nav-link" href="{{ url_for('user_dashboard') }}">Dashboard</a>
+                <a class="nav-link" href="{{ url_for('user_view_lots') }}">Browse Lots</a>
+                <a class="nav-link active" href="{{ url_for('parking_history') }}">History</a>
+                <a class="nav-link" href="{{ url_for('user_summary') }}">Summary</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
             </div>
         </div>
     </nav>
 
     <div class="container mt-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1>
-                        <i class="bi bi-clock-history me-2"></i>Parking History
-                    </h1>
-                    <a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
-                    </a>
-                </div>
-            </div>
-        </div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-        {% if reservations %}
         <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-table me-2"></i>Your Parking Sessions
+                            <i class="fas fa-history"></i> Parking History
                         </h5>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover mb-0">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th><i class="bi bi-hash me-1"></i>Spot</th>
-                                        <th><i class="bi bi-building me-1"></i>Parking Lot</th>
-                                        <th><i class="bi bi-calendar-check me-1"></i>Reserved At</th>
-                                        <th><i class="bi bi-car-front me-1"></i>Occupied At</th>
-                                        <th><i class="bi bi-door-open me-1"></i>Released At</th>
-                                        <th><i class="bi bi-clock me-1"></i>Duration</th>
-                                        <th><i class="bi bi-flag me-1"></i>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for reservation in reservations %}
-                                    <tr>
-                                        <td>
-                                            <!-- FIXED: Use parking_spot instead of spot -->
-                                            <span class="badge bg-light text-dark">{{ reservation.parking_spot.spot_number }}</span>
-                                        </td>
-                                        <td>
-                                            <!-- FIXED: Use parking_spot instead of spot -->
-                                            {{ reservation.parking_spot.parking_lot.name }}
-                                        </td>
-                                        <td><small>{{ reservation.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</small></td>
-                                        <td>
-                                            {% if reservation.occupy_time %}
-                                                <small>{{ reservation.occupy_time.strftime('%Y-%m-%d %H:%M:%S') }}</small>
-                                            {% else %}
-                                                <span class="text-muted">Not occupied</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if reservation.end_time %}
-                                                <small>{{ reservation.end_time.strftime('%Y-%m-%d %H:%M:%S') }}</small>
-                                            {% else %}
-                                                <span class="text-warning">Active</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if reservation.end_time and reservation.occupy_time %}
-                                                {% set duration = reservation.end_time - reservation.occupy_time %}
-                                                <span class="badge bg-info">
-                                                    {{ duration.total_seconds() // 3600 }}h {{ (duration.total_seconds() % 3600) // 60 }}m
-                                                </span>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if reservation.end_time %}
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle me-1"></i>COMPLETED
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-warning">
-                                                    <i class="bi bi-clock me-1"></i>ACTIVE
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <div class="card-body">
+                        {% if history_data %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Parking Lot</th>
+                                            <th>Spot</th>
+                                            <th>Vehicle</th>
+                                            <th>Start Time</th>
+                                            <th>Duration</th>
+                                            <th>Cost</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in history_data %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ item.reservation.parking_spot.parking_lot.name }}</strong><br>
+                                                    <small class="text-muted">{{ item.reservation.parking_spot.parking_lot.address_line_1 }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-secondary">{{ item.reservation.parking_spot.spot_number }}</span>
+                                                </td>
+                                                <td>{{ item.reservation.vehicle_number }}</td>
+                                                <td>
+                                                    {{ item.reservation.start_time.strftime('%Y-%m-%d') }}<br>
+                                                    <small class="text-muted">{{ item.reservation.start_time.strftime('%H:%M') }}</small>
+                                                </td>
+                                                <td>
+                                                    {% if item.duration_minutes > 0 %}
+                                                        <span class="fw-bold">{{ item.duration_formatted }}</span>
+                                                    {% else %}
+                                                        <span class="text-muted">{{ item.duration_formatted }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if item.cost > 0 %}
+                                                        <span class="fw-bold text-success">${{ "%.2f"|format(item.cost) }}</span>
+                                                    {% else %}
+                                                        <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if item.status == 'Completed' %}
+                                                        <span class="badge bg-success">{{ item.status }}</span>
+                                                    {% elif item.status == 'Occupied' %}
+                                                        <span class="badge bg-warning">{{ item.status }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-primary">{{ item.status }}</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No parking history found.</p>
+                                <a href="{{ url_for('user_view_lots') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Make Your First Reservation
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-chart-bar"></i> Quick Summary
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6 mb-3">
+                                <div class="border rounded p-2">
+                                    <h4 class="mb-1 text-primary">{{ summary.total_reservations }}</h4>
+                                    <small class="text-muted">Total<br>Reservations</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="border rounded p-2">
+                                    <h4 class="mb-1 text-success">{{ summary.completed_reservations }}</h4>
+                                    <small class="text-muted">Completed<br>Sessions</small>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="border rounded p-3">
+                                    <h4 class="mb-1 text-info">${{ "%.2f"|format(summary.total_spent) }}</h4>
+                                    <small class="text-muted">Total Spent</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid mt-3">
+                            <a href="{{ url_for('user_summary') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-pie"></i> View Detailed Summary
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        {% else %}
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-body text-center py-5">
-                        <i class="bi bi-clock-history display-1 text-muted mb-3"></i>
-                        <h3 class="text-muted">No Parking History</h3>
-                        <p class="text-muted mb-4">You haven't made any parking reservations yet.</p>
-                        <a href="{{ url_for('user_view_lots') }}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-2"></i>Make Your First Reservation
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
