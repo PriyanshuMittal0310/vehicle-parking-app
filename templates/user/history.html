@@ -5,152 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parking History - VPS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('user_dashboard') }}">
-                <i class="fas fa-parking"></i> VPS
-            </a>
+            <a class="navbar-brand" href="#">VPS</a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="{{ url_for('user_dashboard') }}">Dashboard</a>
-                <a class="nav-link" href="{{ url_for('user_view_lots') }}">Browse Lots</a>
-                <a class="nav-link active" href="{{ url_for('parking_history') }}">History</a>
-                <a class="nav-link" href="{{ url_for('user_summary') }}">Summary</a>
-                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                <a class="nav-link" href="/dashboard">Dashboard</a>
+                <a class="nav-link" href="/logout">Logout</a>
             </div>
         </div>
     </nav>
 
     <div class="container mt-4">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-history"></i> Parking History
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        {% if history_data %}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Parking Lot</th>
-                                            <th>Spot</th>
-                                            <th>Vehicle</th>
-                                            <th>Start Time</th>
-                                            <th>Duration</th>
-                                            <th>Cost</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for item in history_data %}
-                                            <tr>
-                                                <td>
-                                                    <strong>{{ item.reservation.parking_spot.parking_lot.name }}</strong><br>
-                                                    <small class="text-muted">{{ item.reservation.parking_spot.parking_lot.address_line_1 }}</small>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-secondary">{{ item.reservation.parking_spot.spot_number }}</span>
-                                                </td>
-                                                <td>{{ item.reservation.vehicle_number }}</td>
-                                                <td>
-                                                    {{ item.reservation.start_time.strftime('%Y-%m-%d') }}<br>
-                                                    <small class="text-muted">{{ item.reservation.start_time.strftime('%H:%M') }}</small>
-                                                </td>
-                                                <td>
-                                                    {% if item.duration_minutes > 0 %}
-                                                        <span class="fw-bold">{{ item.duration_formatted }}</span>
-                                                    {% else %}
-                                                        <span class="text-muted">{{ item.duration_formatted }}</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    {% if item.cost > 0 %}
-                                                        <span class="fw-bold text-success">${{ "%.2f"|format(item.cost) }}</span>
-                                                    {% else %}
-                                                        <span class="text-muted">-</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    {% if item.status == 'Completed' %}
-                                                        <span class="badge bg-success">{{ item.status }}</span>
-                                                    {% elif item.status == 'Occupied' %}
-                                                        <span class="badge bg-warning">{{ item.status }}</span>
-                                                    {% else %}
-                                                        <span class="badge bg-primary">{{ item.status }}</span>
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="text-center py-5">
-                                <i class="fas fa-history fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No parking history found.</p>
-                                <a href="{{ url_for('user_view_lots') }}" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i> Make Your First Reservation
-                                </a>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
+        <h2 class="mb-4">Parking History</h2>
+        
+        <!-- Summary Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Summary</h4>
             </div>
-
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0">
-                            <i class="fas fa-chart-bar"></i> Quick Summary
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-6 mb-3">
-                                <div class="border rounded p-2">
-                                    <h4 class="mb-1 text-primary">{{ summary.total_reservations }}</h4>
-                                    <small class="text-muted">Total<br>Reservations</small>
-                                </div>
-                            </div>
-                            <div class="col-6 mb-3">
-                                <div class="border rounded p-2">
-                                    <h4 class="mb-1 text-success">{{ summary.completed_reservations }}</h4>
-                                    <small class="text-muted">Completed<br>Sessions</small>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="border rounded p-3">
-                                    <h4 class="mb-1 text-info">${{ "%.2f"|format(summary.total_spent) }}</h4>
-                                    <small class="text-muted">Total Spent</small>
-                                </div>
-                            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 class="text-primary">{{ summary.total_reservations }}</h5>
+                            <small>Total Reservations</small>
                         </div>
-                        <div class="d-grid mt-3">
-                            <a href="{{ url_for('user_summary') }}" class="btn btn-outline-primary">
-                                <i class="fas fa-chart-pie"></i> View Detailed Summary
-                            </a>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 class="text-success">{{ summary.completed_reservations }}</h5>
+                            <small>Completed Sessions</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 class="text-info">₹{{ "%.2f"|format(summary.total_spent) }}</h5>
+                            <small>Total Spent</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5 class="text-warning">₹{{ "%.2f"|format(summary.average_cost) }}</h5>
+                            <small>Average Cost</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- History Table -->
+        {% if history_data %}
+        <div class="card">
+            <div class="card-header">
+                <h4>Reservation Details</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Parking Lot</th>
+                                <th>Spot</th>
+                                <th>Vehicle</th>
+                                <th>Start Time</th>
+                                <th>Duration</th>
+                                <th>Cost</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in history_data %}
+                            <tr>
+                                <td>
+                                    {{ item.reservation.parking_spot.parking_lot.name }}<br>
+                                    <small class="text-muted">{{ item.reservation.parking_spot.parking_lot.address_line_1 }}</small>
+                                </td>
+                                <td>{{ item.reservation.parking_spot.spot_number }}</td>
+                                <td>{{ item.reservation.vehicle_number }}</td>
+                                <td>
+                                    {{ item.reservation.start_time.strftime('%Y-%m-%d') }}<br>
+                                    <small>{{ item.reservation.start_time.strftime('%H:%M') }}</small>
+                                </td>
+                                <td>{{ item.duration_formatted }}</td>
+                                <td>
+                                    {% if item.cost > 0 %}
+                                        ₹{{ "%.2f"|format(item.cost) }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.status == 'Completed' %}
+                                        <span class="badge bg-success">{{ item.status }}</span>
+                                    {% elif item.status == 'Occupied' %}
+                                        <span class="badge bg-warning">{{ item.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">{{ item.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>No parking history found.</h5>
+                <p>Make your first reservation to see your parking history.</p>
+                <a href="/users/lots" class="btn btn-primary">Make Your First Reservation</a>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

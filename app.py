@@ -34,7 +34,24 @@ def ensure_default_admin():
 
 ensure_default_admin()
 
-# Add these helper functions
+def calculate_cost(reservation):
+    """Calculate cost for a reservation based on duration and hourly rate"""
+    if not reservation.end_time:
+        # For active reservations, calculate current cost
+        end_time = datetime.now()
+    else:
+        end_time = reservation.end_time
+    
+    duration = end_time - reservation.start_time
+    # Calculate hours (minimum 1 hour billing)
+    hours = max(1, duration.total_seconds() / 3600)
+    
+    # Get hourly rate and calculate cost
+    hourly_rate = float(reservation.parking_spot.parking_lot.price_per_hour)
+    total_cost = round(hours * hourly_rate, 2)
+    
+    return total_cost
+
 def format_duration(start_time, end_time=None):
     """Format duration between two datetime objects"""
     if not end_time:
@@ -50,19 +67,38 @@ def format_duration(start_time, end_time=None):
     else:
         return f"{minutes}m"
 
-def calculate_cost(reservation):
-    """Calculate cost for a completed reservation"""
-    if not reservation.end_time:
-        return 0
+def get_reservation_details(reservation):
+    """Get comprehensive reservation details including cost and duration"""
+    details = {
+        'reservation': reservation,
+        'duration_formatted': 'N/A',
+        'duration_minutes': 0,
+        'cost': 0.00,
+        'status': 'Reserved'
+    }
     
-    duration = reservation.end_time - reservation.start_time
-    hours = max(1, duration.total_seconds() / 3600)
-    return round(float(hours * reservation.parking_spot.parking_lot.price_per_hour), 2)
+    if reservation.end_time:
+        # Completed reservation
+        details['status'] = 'Completed'
+        details['duration_formatted'] = format_duration(reservation.start_time, reservation.end_time)
+        duration_delta = reservation.end_time - reservation.start_time
+        details['duration_minutes'] = int(duration_delta.total_seconds() / 60)
+        details['cost'] = calculate_cost(reservation)
+    elif reservation.occupy_time:
+        # Currently occupied
+        details['status'] = 'Occupied'
+        details['duration_formatted'] = format_duration(reservation.start_time)
+        duration_delta = datetime.now() - reservation.start_time
+        details['duration_minutes'] = int(duration_delta.total_seconds() / 60)
+        details['cost'] = calculate_cost(reservation)
+    
+    return details
 
 # Make functions available in templates
 app.jinja_env.globals.update(
     format_duration=format_duration,
-    calculate_cost=calculate_cost
+    calculate_cost=calculate_cost,
+    get_reservation_details=get_reservation_details
 )
 
 # ────────────────────────────────────────────────────────────────
@@ -155,14 +191,22 @@ def logout():
 @role_required("user")
 def user_dashboard():
     with SessionLocal() as db:
-        # Fixed: Get current active reservation with proper relationship name
         current_reservation = (
             db.query(Reservation)
             .filter_by(user_id=session["user_id"], end_time=None)
-            .options(selectinload(Reservation.parking_spot))  # Fixed: Use parking_spot
+            .options(selectinload(Reservation.parking_spot)
+                    .selectinload(ParkingSpot.parking_lot))
             .first()
         )
-        return render_template("user_dashboard.html", current_reservation=current_reservation)
+        
+        # Calculate current cost if reservation exists
+        current_cost = 0
+        if current_reservation:
+            current_cost = calculate_cost(current_reservation)
+        
+        return render_template("user_dashboard.html", 
+                             current_reservation=current_reservation,
+                             current_cost=current_cost)
 
 @app.route("/admin")
 @login_required
@@ -337,40 +381,21 @@ def parking_history():
         total_spent = 0
         
         for reservation in reservations:
-            duration_minutes = 0
-            cost = 0
-            status = "Reserved"
-            
-            if reservation.end_time:
-                duration_delta = reservation.end_time - reservation.start_time
-                duration_minutes = int(duration_delta.total_seconds() / 60)
-                duration_hours = max(1, duration_minutes / 60)
-                # ✅ Fixed: Convert Decimal to float before multiplication
-                cost = round(duration_hours * float(reservation.parking_spot.parking_lot.price_per_hour), 2)
-                status = "Completed"
-                total_spent += cost
-            elif reservation.occupy_time:
-                status = "Occupied"
-                duration_delta = datetime.now() - reservation.start_time
-                duration_minutes = int(duration_delta.total_seconds() / 60)
-            
-            history_data.append({
-                'reservation': reservation,
-                'duration_minutes': duration_minutes,
-                'duration_formatted': f"{duration_minutes // 60}h {duration_minutes % 60}m" if duration_minutes > 0 else "N/A",
-                'cost': cost,
-                'status': status
-            })
+            details = get_reservation_details(reservation)
+            history_data.append(details)
+            total_spent += details['cost']
         
         summary = {
             'total_reservations': len(reservations),
             'completed_reservations': len([r for r in reservations if r.end_time]),
-            'total_spent': round(total_spent, 2)
+            'total_spent': round(total_spent, 2),
+            'average_cost': round(total_spent / max(1, len([r for r in reservations if r.end_time])), 2)
         }
         
-        return render_template("user/history.html", 
-                             history_data=history_data, 
+        return render_template("user/history.html",
+                             history_data=history_data,
                              summary=summary)
+
 
 @app.route("/user/summary")
 @login_required
@@ -379,7 +404,6 @@ def user_summary():
     with SessionLocal() as db:
         user_id = session["user_id"]
         
-        # Get user reservations
         reservations = (
             db.query(Reservation)
             .filter_by(user_id=user_id)
@@ -390,33 +414,39 @@ def user_summary():
             .all()
         )
         
-        # Calculate basic statistics
+        # Calculate comprehensive statistics
         completed_reservations = [r for r in reservations if r.end_time]
+        active_reservations = [r for r in reservations if not r.end_time]
+        
         total_spent = 0
         total_minutes = 0
+        current_session_cost = 0
         
+        # Process completed reservations
         for reservation in completed_reservations:
-            duration = reservation.end_time - reservation.start_time
-            minutes = int(duration.total_seconds() / 60)
-            hours = max(1, minutes / 60)
-            cost = hours * float(reservation.parking_spot.parking_lot.price_per_hour)
-            
+            cost = calculate_cost(reservation)
             total_spent += cost
-            total_minutes += minutes
+            
+            duration = reservation.end_time - reservation.start_time
+            total_minutes += int(duration.total_seconds() / 60)
+        
+        # Calculate current session cost
+        for reservation in active_reservations:
+            current_session_cost += calculate_cost(reservation)
         
         summary_data = {
             'total_reservations': len(reservations),
             'completed_reservations': len(completed_reservations),
-            'active_reservations': len([r for r in reservations if not r.end_time]),
+            'active_reservations': len(active_reservations),
             'total_spent': round(total_spent, 2),
-            'total_duration': f"{total_minutes // 60}h {total_minutes % 60}m"
+            'current_session_cost': round(current_session_cost, 2),
+            'total_duration': f"{total_minutes // 60}h {total_minutes % 60}m",
+            'average_cost_per_session': round(total_spent / max(1, len(completed_reservations)), 2)
         }
         
-        # ✅ Add current date to template context
-        return render_template("user/summary.html", 
+        return render_template("user/summary.html",
                              summary=summary_data,
                              current_date=datetime.now())
-
 
 # ────────────────────────────────────────────────────────────────
 # parking-lot CRUD
@@ -648,14 +678,14 @@ def admin_parking_records():
 @role_required("admin")
 def admin_summary():
     with SessionLocal() as db:
-        # Basic admin statistics
+        # Basic statistics
         total_users = db.query(User).count()
         total_reservations = db.query(Reservation).count()
-        completed_reservations = db.query(Reservation).filter(Reservation.end_time.isnot(None)).count()
+        completed_reservations_count = db.query(Reservation).filter(Reservation.end_time.isnot(None)).count()
         active_reservations = db.query(Reservation).filter(Reservation.end_time.is_(None)).count()
         
-        # Calculate total revenue from completed reservations
-        completed = (
+        # Get completed reservations for revenue calculation
+        completed_reservations = (
             db.query(Reservation)
             .filter(Reservation.end_time.isnot(None))
             .options(
@@ -665,19 +695,30 @@ def admin_summary():
             .all()
         )
         
-        total_revenue = 0
-        for reservation in completed:
-            duration = reservation.end_time - reservation.start_time
-            hours = max(1, duration.total_seconds() / 3600)
-            cost = float(hours * float(reservation.parking_spot.parking_lot.price_per_hour))
-            total_revenue += cost
+        # Calculate total revenue using consistent cost calculation
+        total_revenue = sum(calculate_cost(reservation) for reservation in completed_reservations)
+        
+        # Calculate potential current revenue from active sessions
+        active_reservations_data = (
+            db.query(Reservation)
+            .filter(Reservation.end_time.is_(None))
+            .options(
+                selectinload(Reservation.parking_spot)
+                .selectinload(ParkingSpot.parking_lot)
+            )
+            .all()
+        )
+        
+        potential_revenue = sum(calculate_cost(reservation) for reservation in active_reservations_data)
         
         summary_data = {
             'total_users': total_users,
             'total_reservations': total_reservations,
-            'completed_reservations': completed_reservations,
+            'completed_reservations': completed_reservations_count,
             'active_reservations': active_reservations,
-            'total_revenue': round(total_revenue, 2)
+            'total_revenue': round(total_revenue, 2),
+            'potential_current_revenue': round(potential_revenue, 2),
+            'average_revenue_per_session': round(total_revenue / max(1, completed_reservations_count), 2)
         }
         
         return render_template("admin/summary.html", summary=summary_data)
