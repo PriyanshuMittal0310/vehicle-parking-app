@@ -3,130 +3,104 @@
 {% block title %}Spots – {{ lot.name }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Parking Spots - {{ lot.name }}</h1>
-    <p class="text-muted mb-4">Total spots: {{ lot.number_of_spots }}</p>
-    
-    <!-- Legend -->
-    <div class="mb-4">
-        <h5>Legend:</h5>
-        <div class="d-flex gap-3">
-            <div class="d-flex align-items-center">
-                <div class="spot-box available me-2"></div>
-                <span>Available</span>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2>🅿️ {{ lot.name }} - Parking Spots</h2>
+            <p class="text-muted">{{ lot.address_line_1 }}</p>
+        </div>
+    </div>
+
+    <!-- Lot Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Total Capacity</h5>
+                    <h3>{{ lot.number_of_spots }}</h3>
+                </div>
             </div>
-            <div class="d-flex align-items-center">
-                <div class="spot-box reserved me-2"></div>
-                <span>Reserved</span>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Available</h5>
+                    <h3>{{ spots|selectattr('status', 'equalto', SpotStatus.AVAILABLE)|list|length }}</h3>
+                </div>
             </div>
-            <div class="d-flex align-items-center">
-                <div class="spot-box occupied me-2"></div>
-                <span>Occupied</span>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Reserved</h5>
+                    <h3>{{ spots|selectattr('status', 'equalto', SpotStatus.RESERVED)|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5>Occupied</h5>
+                    <h3>{{ spots|selectattr('status', 'equalto', SpotStatus.OCCUPIED)|list|length }}</h3>
+                </div>
             </div>
         </div>
     </div>
-    
-    {% if spots %}
-        <!-- Spots Grid -->
-        <div class="spots-grid">
-            {% for spot in spots %}
-                <div class="spot-container">
-                    <div class="spot-box 
-                        {% if spot.status == SpotStatus.AVAILABLE %}available
-                        {% elif spot.status == SpotStatus.RESERVED %}reserved
-                        {% else %}occupied{% endif %}" 
-                        title="Spot {{ spot.spot_number }} - {{ spot.status.value.title() }}">
-                        <span class="spot-number">{{ spot.spot_number }}</span>
+
+    <!-- Spots Grid -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📍 Spot Layout (Actual: {{ spots|length }} spots)</h5>
+                </div>
+                <div class="card-body">
+                    {% if spots|length != lot.number_of_spots %}
+                    <div class="alert alert-warning">
+                        ⚠️ Mismatch detected: Expected {{ lot.number_of_spots }} spots, but found {{ spots|length }} spots.
+                        <a href="{{ url_for('sync_lot_spots', lot_id=lot.id) }}" class="btn btn-sm btn-warning ms-2">
+                            Sync Spots
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        {% for spot in spots %}
+                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                            <div class="card h-100 border-{% if spot.status == SpotStatus.AVAILABLE %}success{% elif spot.status == SpotStatus.RESERVED %}warning{% else %}danger{% endif %}">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">{{ spot.spot_number }}</h6>
+                                    <span class="badge bg-{% if spot.status == SpotStatus.AVAILABLE %}success{% elif spot.status == SpotStatus.RESERVED %}warning{% else %}danger{% endif %}">
+                                        {{ spot.status.value|title }}
+                                    </span>
+                                    {% if spot.reservations %}
+                                        {% set active_reservation = spot.reservations|selectattr('end_time', 'none')|first %}
+                                        {% if active_reservation %}
+                                        <br><small class="text-muted mt-1">
+                                            {{ active_reservation.user.full_name[:15] }}...
+                                        </small>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
-            {% endfor %}
+            </div>
         </div>
-    {% else %}
-        <div class="alert alert-info">
-            <h4>No spots found for this lot.</h4>
-            <p>Spots should be automatically created when you add or edit a parking lot with a capacity greater than 0.</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <a href="{{ url_for('list_lots') }}" class="btn btn-secondary">
+                ← Back to Lots
+            </a>
+            <a href="{{ url_for('edit_lot', lot_id=lot.id) }}" class="btn btn-primary">
+                Edit Lot
+            </a>
         </div>
-    {% endif %}
-    
-    
-    <div class="mt-4">
-        <a href="{{ url_for('list_lots') }}" class="btn btn-secondary">Back to Lots</a>
     </div>
 </div>
-
-<style>
-.spots-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.spot-container {
-    display: flex;
-    justify-content: center;
-}
-
-.spot-box {
-    width: 70px;
-    height: 70px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 12px;
-    color: white;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-}
-
-.spot-box:hover {
-    transform: scale(1.05);
-    border-color: #333;
-}
-
-.spot-box.available {
-    background-color: #28a745;
-    background-image: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-}
-
-.spot-box.reserved {
-    background-color: #ffc107;
-    background-image: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
-}
-
-.spot-box.occupied {
-    background-color: #dc3545;
-    background-image: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
-}
-
-.spot-number {
-    font-size: 11px;
-    font-weight: 600;
-}
-
-/* Legend spots */
-.spot-box.me-2 {
-    width: 30px;
-    height: 30px;
-    font-size: 10px;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .spots-grid {
-        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-        gap: 8px;
-    }
-    
-    .spot-box {
-        width: 55px;
-        height: 55px;
-        font-size: 10px;
-    }
-}
-</style>
 {% endblock %}

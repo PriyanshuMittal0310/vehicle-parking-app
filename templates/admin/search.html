@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Search{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2>🔍 Admin Search Dashboard</h2>
+            <p class="text-muted">Search for users, parking spots, reservations, and parking lots</p>
+        </div>
+    </div>
+    
+    <!-- Search Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" class="row g-3">
+                        <div class="col-md-7">
+                            <input type="text" 
+                                   name="search_query" 
+                                   class="form-control form-control-lg" 
+                                   placeholder="Search for users, spots, reservations, or parking lots..."
+                                   value="{{ search_query }}"
+                                   required>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="search_type" class="form-select form-select-lg">
+                                <option value="all" {% if search_type == 'all' %}selected{% endif %}>All Results</option>
+                                <option value="users" {% if search_type == 'users' %}selected{% endif %}>Users Only</option>
+                                <option value="spots" {% if search_type == 'spots' %}selected{% endif %}>Parking Spots</option>
+                                <option value="reservations" {% if search_type == 'reservations' %}selected{% endif %}>Reservations</option>
+                                <option value="lots" {% if search_type == 'lots' %}selected{% endif %}>Parking Lots</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if search_query %}
+    <!-- Search Results -->
+    <div class="row">
+        
+        <!-- Users Results -->
+        {% if results.users %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-users text-primary"></i> Users Found ({{ results.users|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Current Status</th>
+                                    <th>Location</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_data in results.users %}
+                                <tr>
+                                    <td><strong>{{ user_data.user.full_name }}</strong></td>
+                                    <td>{{ user_data.user.email }}</td>
+                                    <td>{{ user_data.user.phone or 'N/A' }}</td>
+                                    <td>
+                                        {% if user_data.current_reservation %}
+                                            <span class="badge bg-success">🚗 Active Parking</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No Active Parking</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user_data.current_reservation %}
+                                            <strong>Spot {{ user_data.current_reservation.parking_spot.spot_number }}</strong><br>
+                                            <small class="text-muted">{{ user_data.current_reservation.parking_spot.parking_lot.name }}</small>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Parking Spots Results -->
+        {% if results.parking_spots %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-car text-success"></i> Parking Spots Found ({{ results.parking_spots|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for spot_data in results.parking_spots %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-{{ spot_data.status_info.status_class }}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">
+                                            <strong>Spot {{ spot_data.spot.spot_number }}</strong>
+                                        </h6>
+                                        <span class="badge bg-{{ spot_data.status_info.status_class }}">
+                                            {{ spot_data.status_info.status }}
+                                        </span>
+                                    </div>
+                                    
+                                    <p class="card-text small">
+                                        <strong>📍 Location:</strong> {{ spot_data.spot.parking_lot.name }}<br>
+                                        <strong>🔍 Status:</strong> {{ spot_data.status_info.details }}
+                                        
+                                        {% if spot_data.current_reservation %}
+                                        <br><strong>👤 User:</strong> {{ spot_data.current_reservation.user.full_name }}
+                                        <br><strong>⏱️ Duration:</strong> {{ spot_data.status_info.duration }}
+                                        <br><strong>💰 Current Cost:</strong> ${{ "%.2f"|format(spot_data.status_info.cost) }}
+                                        {% endif %}
+                                    </p>
+                                    
+                                    <div class="mt-auto">
+                                        <a href="{{ url_for('lot_spots', lot_id=spot_data.spot.parking_lot.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            View All Spots
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Parking Lots Results -->
+        {% if results.parking_lots %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-building text-info"></i> Parking Lots Found ({{ results.parking_lots|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for lot_data in results.parking_lots %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title">{{ lot_data.lot.name }}</h6>
+                                        <span class="badge bg-{% if lot_data.occupancy_rate < 50 %}success{% elif lot_data.occupancy_rate < 80 %}warning{% else %}danger{% endif %}">
+                                            {{ lot_data.occupancy_rate }}% Full
+                                        </span>
+                                    </div>
+                                    
+                                    <p class="card-text small">
+                                        <strong>📍 Address:</strong> {{ lot_data.lot.address_line_1 }}<br>
+                                        <strong>💰 Rate:</strong> ${{ lot_data.lot.price_per_hour }}/hour<br>
+                                        <strong>🏗️ Capacity:</strong> {{ lot_data.total_spots }} spots
+                                    </p>
+                                    
+                                    <div class="row text-center mb-3">
+                                        <div class="col-4">
+                                            <div class="text-success">
+                                                <strong>{{ lot_data.available_spots }}</strong><br>
+                                                <small>Available</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="text-danger">
+                                                <strong>{{ lot_data.occupied_spots }}</strong><br>
+                                                <small>Occupied</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="text-warning">
+                                                <strong>{{ lot_data.reserved_spots }}</strong><br>
+                                                <small>Reserved</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="progress mb-3" style="height: 8px;">
+                                        <div class="progress-bar bg-danger" 
+                                             style="width: {{ (lot_data.occupied_spots / lot_data.total_spots * 100) }}%"></div>
+                                        <div class="progress-bar bg-warning" 
+                                             style="width: {{ (lot_data.reserved_spots / lot_data.total_spots * 100) }}%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ url_for('lot_spots', lot_id=lot_data.lot.id) }}" 
+                                           class="btn btn-sm btn-primary flex-fill">
+                                            View Spots
+                                        </a>
+                                        <a href="{{ url_for('edit_lot', lot_id=lot_data.lot.id) }}" 
+                                           class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Reservations Results -->
+        {% if results.reservations %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clipboard-list text-warning"></i> Reservations Found ({{ results.reservations|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Spot & Location</th>
+                                    <th>Vehicle</th>
+                                    <th>Status</th>
+                                    <th>Duration</th>
+                                    <th>Cost</th>
+                                    <th>Started</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for res_data in results.reservations %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ res_data.reservation.user.full_name }}</strong><br>
+                                        <small class="text-muted">{{ res_data.reservation.user.email }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>Spot {{ res_data.reservation.parking_spot.spot_number }}</strong><br>
+                                        <small class="text-muted">{{ res_data.reservation.parking_spot.parking_lot.name }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ res_data.reservation.vehicle_number }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if res_data.status == 'Completed' %}success{% elif res_data.status == 'Occupied' %}warning{% else %}info{% endif %}">
+                                            {{ res_data.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ res_data.duration_formatted }}</td>
+                                    <td><strong>${{ "%.2f"|format(res_data.cost) }}</strong></td>
+                                    <td>
+                                        <small>{{ res_data.reservation.start_time.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- No Results Message -->
+    {% if not (results.users or results.parking_spots or results.reservations or results.parking_lots) %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-search fa-2x mb-3"></i>
+                <h5>No results found for "{{ search_query }}"</h5>
+                <p class="mb-0">Try searching with different keywords or check the search type filter.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- Initial Search Prompt -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-light text-center">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5>Search the Vehicle Parking System</h5>
+                <p class="text-muted">Enter a search term above to find users, parking spots, reservations, or parking lots.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

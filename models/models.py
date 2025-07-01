@@ -14,10 +14,7 @@ from sqlalchemy.orm import (
 # ────────────────────────────────────────────────────────────────
 
 DB_PATH = Path(__file__).with_suffix(".db")
-
-# Fixed: Added check_same_thread=False to prevent threading issues
-engine = create_engine(f"sqlite:///{DB_PATH}?check_same_thread=False", echo=False, future=True, pool_pre_ping=True )
-
+engine = create_engine(f"sqlite:///{DB_PATH}?check_same_thread=False", echo=False, future=True, pool_pre_ping=True)
 Base = declarative_base()
 
 # ────────────────────────────────────────────────────────────────
@@ -30,15 +27,14 @@ class SpotStatus(str, Enum):
     OCCUPIED = "occupied"
 
 # ────────────────────────────────────────────────────────────────
-# ORM entities
+# ORM entities (same as before)
 # ────────────────────────────────────────────────────────────────
 
 class User(Base):
     __tablename__ = "users"
-    
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, nullable=False)
-    password = Column(String, nullable=False)  # plaintext (demo)
+    password = Column(String, nullable=False)
     full_name = Column(String, nullable=False)
     address = Column(String)
     phone = Column(String)
@@ -50,22 +46,20 @@ class User(Base):
     )
     
     def __repr__(self):
-        return f"<User {self.email}>"
+        return f"<User('{self.email}')>"
 
 class Admin(Base):
     __tablename__ = "admins"
-    
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     full_name = Column(String, nullable=False)
     
     def __repr__(self):
-        return f"<Admin {self.email}>"
+        return f"<Admin('{self.email}')>"
 
 class ParkingLot(Base):
     __tablename__ = "parking_lots"
-    
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     address_line_1 = Column(String, nullable=False)
@@ -80,11 +74,10 @@ class ParkingLot(Base):
     )
     
     def __repr__(self):
-        return f"<ParkingLot {self.name}>"
+        return f"<ParkingLot('{self.name}')>"
 
 class ParkingSpot(Base):
     __tablename__ = "parking_spots"
-    
     id = Column(Integer, primary_key=True)
     spot_number = Column(String, nullable=False)
     status = Column(PgEnum(SpotStatus), default=SpotStatus.AVAILABLE, nullable=False)
@@ -96,53 +89,110 @@ class ParkingSpot(Base):
     )
     
     def __repr__(self):
-        return f"<ParkingSpot {self.spot_number}>"
+        return f"<ParkingSpot('{self.spot_number}')>"
 
 class Reservation(Base):
     __tablename__ = "reservations"
-    
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     parking_spot_id = Column(Integer, ForeignKey("parking_spots.id"), nullable=False)
     vehicle_number = Column(String, nullable=False)
     start_time = Column(DateTime, default=datetime.utcnow, nullable=False)
-    occupy_time = Column(DateTime, nullable=True)  # Added: When user actually parks
-    end_time = Column(DateTime, nullable=True)  # NULL → active
+    occupy_time = Column(DateTime, nullable=True)
+    end_time = Column(DateTime, nullable=True)
     
     user = relationship("User", back_populates="reservations")
     parking_spot = relationship("ParkingSpot", back_populates="reservations")
     
     def __repr__(self):
-        return f"<Reservation {self.id}>"
+        return f"<Reservation(user_id={self.user_id}, spot_id={self.parking_spot_id})>"
 
 # ────────────────────────────────────────────────────────────────
-# Listener: auto-create ParkingSpot rows (Fixed)
+# ✅ FIXED: Complete event listener for spot management
 # ────────────────────────────────────────────────────────────────
 
-def _create_spots(target, value, oldvalue, *_):
+def _manage_parking_spots(target, value, oldvalue, *_):
+    """Enhanced event listener: handles both increasing and decreasing spot counts"""
     if not isinstance(value, int) or value <= 0:
         return
     
     previous = oldvalue if isinstance(oldvalue, int) else 0
-    if value <= previous:  # capacity didn't grow
+    if value == previous:  # No change needed
         return
     
     sess = object_session(target)
-    if sess is None:  # lot not yet attached
+    if sess is None:  # lot not yet attached to session
         return
     
-    # Create additional spots
-    for i in range(previous + 1, value + 1):
-        sess.add(
-            ParkingSpot(
-                spot_number=str(i).zfill(3),
-                parking_lot=target,
-                status=SpotStatus.AVAILABLE,
-            )
+    try:
+        # Get current spots count from database
+        current_spots_count = (
+            sess.query(ParkingSpot)
+            .filter_by(parking_lot_id=target.id)
+            .count()
         )
+        
+        print(f"🔧 Managing spots for '{target.name}': Current={current_spots_count}, Target={value}")
+        
+        if value > current_spots_count:
+            # ✅ ADD NEW SPOTS
+            spots_to_add = value - current_spots_count
+            print(f"   ➕ Adding {spots_to_add} new spots")
+            
+            for i in range(current_spots_count + 1, value + 1):
+                new_spot = ParkingSpot(
+                    spot_number=str(i).zfill(3),
+                    parking_lot_id=target.id,
+                    status=SpotStatus.AVAILABLE
+                )
+                sess.add(new_spot)
+                print(f"      ✅ Added spot {new_spot.spot_number}")
+                
+        elif value < current_spots_count:
+            # ✅ REMOVE EXCESS SPOTS (only if available)
+            spots_to_remove = current_spots_count - value
+            print(f"   ➖ Attempting to remove {spots_to_remove} excess spots")
+            
+            # Get spots to potentially remove (highest numbers first)
+            excess_spots = (
+                sess.query(ParkingSpot)
+                .filter_by(parking_lot_id=target.id)
+                .order_by(ParkingSpot.spot_number.desc())
+                .limit(spots_to_remove)
+                .all()
+            )
+            
+            removed_count = 0
+            blocked_spots = []
+            
+            for spot in excess_spots:
+                if spot.status == SpotStatus.AVAILABLE:
+                    sess.delete(spot)
+                    removed_count += 1
+                    print(f"      ✅ Removed spot {spot.spot_number}")
+                else:
+                    blocked_spots.append(f"{spot.spot_number}({spot.status.value})")
+                    print(f"      ❌ Cannot remove spot {spot.spot_number} - Status: {spot.status.value}")
+            
+            # If we couldn't remove all requested spots, adjust target
+            if blocked_spots:
+                actual_capacity = current_spots_count - removed_count
+                print(f"   ⚠️  Could only remove {removed_count}/{spots_to_remove} spots")
+                print(f"   ⚠️  Blocked spots: {', '.join(blocked_spots)}")
+                print(f"   ⚠️  Adjusting capacity to {actual_capacity}")
+                target.number_of_spots = actual_capacity
+        
+        # Commit the changes
+        sess.flush()
+        print(f"   ✅ Spot management completed for '{target.name}'")
+        
+    except Exception as e:
+        print(f"❌ Error managing spots for '{target.name}': {str(e)}")
+        sess.rollback()
+        raise
 
-# Fixed: Properly attach the event listener
-event.listen(ParkingLot.number_of_spots, 'set', _create_spots)
+# ✅ Attach the enhanced event listener
+event.listen(ParkingLot.number_of_spots, 'set', _manage_parking_spots)
 
 # ────────────────────────────────────────────────────────────────
 # Helper
