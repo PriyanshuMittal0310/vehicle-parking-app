@@ -13,7 +13,7 @@
 
     <!-- Lot Statistics -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-12 col-md-3 mb-3 mb-md-0">
             <div class="card bg-info text-white">
                 <div class="card-body">
                     <h5>Total Capacity</h5>
@@ -21,27 +21,51 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-12 col-md-3 mb-3 mb-md-0">
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <h5>Available</h5>
-                    <h3>{{ spots|selectattr('status', 'equalto', SpotStatus.AVAILABLE)|list|length }}</h3>
+                    <h3>
+                        {% set available_count = 0 %}
+                        {% for spot in spots %}
+                            {% if spot.status == SpotStatus.AVAILABLE %}
+                                {% set available_count = available_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ available_count }}
+                    </h3>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-12 col-md-3 mb-3 mb-md-0">
             <div class="card bg-warning text-white">
                 <div class="card-body">
                     <h5>Reserved</h5>
-                    <h3>{{ spots|selectattr('status', 'equalto', SpotStatus.RESERVED)|list|length }}</h3>
+                    <h3>
+                        {% set reserved_count = 0 %}
+                        {% for spot in spots %}
+                            {% if spot.status == SpotStatus.RESERVED %}
+                                {% set reserved_count = reserved_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ reserved_count }}
+                    </h3>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-12 col-md-3 mb-3 mb-md-0">
             <div class="card bg-danger text-white">
                 <div class="card-body">
                     <h5>Occupied</h5>
-                    <h3>{{ spots|selectattr('status', 'equalto', SpotStatus.OCCUPIED)|list|length }}</h3>
+                    <h3>
+                        {% set occupied_count = 0 %}
+                        {% for spot in spots %}
+                            {% if spot.status == SpotStatus.OCCUPIED %}
+                                {% set occupied_count = occupied_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ occupied_count }}
+                    </h3>
                 </div>
             </div>
         </div>
@@ -58,15 +82,17 @@
                     {% if spots|length != lot.number_of_spots %}
                     <div class="alert alert-warning">
                         ⚠️ Mismatch detected: Expected {{ lot.number_of_spots }} spots, but found {{ spots|length }} spots.
-                        <a href="{{ url_for('sync_lot_spots', lot_id=lot.id) }}" class="btn btn-sm btn-warning ms-2">
-                            Sync Spots
-                        </a>
+                        <form method="POST" action="{{ url_for('sync_lot_spots', lot_id=lot.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-warning ms-2">
+                                Sync Spots
+                            </button>
+                        </form>
                     </div>
                     {% endif %}
                     
                     <div class="row">
                         {% for spot in spots %}
-                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-3">
                             <div class="card h-100 border-{% if spot.status == SpotStatus.AVAILABLE %}success{% elif spot.status == SpotStatus.RESERVED %}warning{% else %}danger{% endif %}">
                                 <div class="card-body text-center">
                                     <h6 class="card-title">{{ spot.spot_number }}</h6>
@@ -74,7 +100,12 @@
                                         {{ spot.status.value|title }}
                                     </span>
                                     {% if spot.reservations %}
-                                        {% set active_reservation = spot.reservations|selectattr('end_time', 'none')|first %}
+                                        {% set active_reservation = none %}
+                                        {% for reservation in spot.reservations %}
+                                            {% if reservation.end_time == none %}
+                                                {% set active_reservation = reservation %}
+                                            {% endif %}
+                                        {% endfor %}
                                         {% if active_reservation %}
                                         <br><small class="text-muted mt-1">
                                             {{ active_reservation.user.full_name[:15] }}...

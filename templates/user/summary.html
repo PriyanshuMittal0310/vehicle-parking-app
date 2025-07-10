@@ -35,7 +35,7 @@
 
         <div class="row mb-4">
             <!-- Main Statistics -->
-            <div class="col-md-3 mb-3">
+            <div class="col-12 col-md-3 mb-3">
                 <div class="card text-center">
                     <div class="card-body">
                         <h3 class="text-primary">{{ summary.total_reservations }}</h3>
@@ -43,7 +43,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-12 col-md-3 mb-3">
                 <div class="card text-center">
                     <div class="card-body">
                         <h3 class="text-success">{{ summary.completed_reservations }}</h3>
@@ -51,7 +51,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-12 col-md-3 mb-3">
                 <div class="card text-center">
                     <div class="card-body">
                         <h3 class="text-warning">{{ summary.active_reservations }}</h3>
@@ -59,7 +59,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-12 col-md-3 mb-3">
                 <div class="card text-center">
                     <div class="card-body">
                         <h3 class="text-info">₹{{ "%.2f"|format(summary.total_spent) }}</h3>

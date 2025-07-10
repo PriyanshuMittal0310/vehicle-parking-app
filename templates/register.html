@@ -1,36 +1,48 @@
 {% extends 'base.html' %}
 {% block title %}Register{% endblock %}
 {% block content %}
-<h3>Register</h3>
-<form method="post" class="w-50">
-  <div class="row">
-    <div class="col-md-6 mb-3">
-      <label class="form-label">E-mail</label>
-      <input name="email" type="email" class="form-control" required>
-    </div>
-    <div class="col-md-6 mb-3">
-      <label class="form-label">Password</label>
-      <input name="password" type="password" class="form-control" required>
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title mb-4 text-center">Register</h3>
+          <form method="post" class="w-100">
+            <div class="row">
+              <div class="col-12 col-md-6 mb-3">
+                <label class="form-label">E-mail</label>
+                <input name="email" type="email" class="form-control" required>
+              </div>
+              <div class="col-12 col-md-6 mb-3">
+                <label class="form-label">Password</label>
+                <input name="password" type="password" class="form-control" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Full name</label>
+              <input name="full_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Address</label>
+              <input name="address" class="form-control">
+            </div>
+            <div class="row">
+              <div class="col-12 col-md-6 mb-3">
+                <label class="form-label">Phone</label>
+                <input name="phone" class="form-control">
+              </div>
+              <div class="col-12 col-md-6 mb-3">
+                <label class="form-label">Pin code</label>
+                <input name="pin_code" class="form-control">
+              </div>
+            </div>
+            <div class="d-grid">
+              <button class="btn btn-success btn-lg">Register</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Full name</label>
-    <input name="full_name" class="form-control" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Address</label>
-    <input name="address" class="form-control">
-  </div>
-  <div class="row">
-    <div class="col-md-6 mb-3">
-      <label class="form-label">Phone</label>
-      <input name="phone" class="form-control">
-    </div>
-    <div class="col-md-6 mb-3">
-      <label class="form-label">Pin code</label>
-      <input name="pin_code" class="form-control">
-    </div>
-  </div>
-  <button class="btn btn-success">Register</button>
-</form>
+</div>
 {% endblock %}

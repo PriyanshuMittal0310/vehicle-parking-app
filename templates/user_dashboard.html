@@ -3,24 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehicle Parking System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>User Dashboard - Vehicle Parking System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-light">
+    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="#">Vehicle Parking System</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/user/history">History</a>
-                <a class="nav-link" href="/user/summary">Summary</a>
-                <a class="nav-link" href="/logout">Logout</a>
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-car-front"></i> VPS Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_dashboard') }}">
+                            <i class="bi bi-house"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_view_lots') }}">
+                            <i class="bi bi-geo-alt"></i> Parking Lots
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('parking_history') }}">
+                            <i class="bi bi-clock-history"></i> History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_summary') }}">
+                            <i class="bi bi-graph-up"></i> Summary
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-warning" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
 
+    <!-- Main Content -->
     <div class="container mt-4">
-        <h2 class="mb-4">User Dashboard</h2>
-        
+        <!-- Flash Messages -->
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
@@ -32,75 +63,205 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Page Header -->
         <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Quick Actions</h4>
-                    </div>
-                    <div class="card-body">
-                        <a href="/user/lots" class="btn btn-primary me-2">View Available Parking Lots</a>
-                        <a href="/user/history" class="btn btn-secondary me-2">View Parking History</a>
-                        <a href="/user/summary" class="btn btn-info">View Summary</a>
-                    </div>
-                </div>
+            <div class="col-12">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-person-circle"></i> User Dashboard
+                </h1>
+                <p class="text-muted">Manage your parking reservations</p>
             </div>
         </div>
 
-        {% if current_reservation %}
-        <div class="card">
-            <div class="card-header">
-                <h4>Current Reservation</h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Spot:</strong> {{ current_reservation.parking_spot.spot_number }}</p>
-                        <p><strong>Parking Lot:</strong> {{ current_reservation.parking_spot.parking_lot.name }}</p>
-                        <p><strong>Address:</strong> {{ current_reservation.parking_spot.parking_lot.address_line_1 }}</p>
-                        <p><strong>Vehicle Number:</strong> {{ current_reservation.vehicle_number }}</p>
-                        <p><strong>Reserved At:</strong> {{ current_reservation.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-                        <p><strong>Current Cost:</strong> <span class="text-success">₹{{ "%.2f"|format(current_cost) }}</span></p>
-                        <p><strong>Hourly Rate:</strong> ₹{{ current_reservation.parking_spot.parking_lot.price_per_hour }}/hour</p>
+        <!-- Current Reservation Status -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-car-front-fill"></i> Current Reservation Status
+                        </h5>
                     </div>
-                    <div class="col-md-6">
-                        {% if current_reservation.parking_spot.status.value == 'reserved' %}
-                            <div class="alert alert-warning">
-                                <strong>RESERVED</strong> - Please park your vehicle and mark as occupied.
+                    <div class="card-body">
+                        {% if current_reservation %}
+                            <div class="row">
+                                <div class="col-12 col-md-8">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Parking Lot:</strong></div>
+                                        <div class="col-sm-8">{{ current_reservation.parking_spot.parking_lot.name }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Spot Number:</strong></div>
+                                        <div class="col-sm-8">{{ current_reservation.parking_spot.spot_number }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Address:</strong></div>
+                                        <div class="col-sm-8">{{ current_reservation.parking_spot.parking_lot.address_line_1 }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Vehicle Number:</strong></div>
+                                        <div class="col-sm-8">{{ current_reservation.vehicle_number }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Start Time:</strong></div>
+                                        <div class="col-sm-8">{{ current_reservation.start_time.strftime('%Y-%m-%d %H:%M') }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Duration:</strong></div>
+                                        <div class="col-sm-8">{{ format_duration(current_reservation.start_time) }}</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Current Cost:</strong></div>
+                                        <div class="col-sm-8">
+                                            <span class="badge bg-success fs-6">₹{{ "%.2f"|format(current_cost) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Status:</strong></div>
+                                        <div class="col-sm-8">
+                                            {% if current_reservation.occupy_time %}
+                                                <span class="badge bg-warning">Occupied</span>
+                                                <small class="text-muted ms-2">since {{ current_reservation.occupy_time.strftime('%H:%M') }}</small>
+                                            {% else %}
+                                                <span class="badge bg-info">Reserved</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 mt-3 mt-md-0">
+                                    <div class="text-center">
+                                        {% if not current_reservation.occupy_time %}
+                                            <form method="POST" action="{{ url_for('occupy_spot', reservation_id=current_reservation.id) }}" class="mb-2">
+                                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                                    <i class="bi bi-play-circle"></i> Occupy Spot
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('release_spot', reservation_id=current_reservation.id) }}">
+                                                <button type="submit" class="btn btn-danger btn-lg w-100">
+                                                    <i class="bi bi-stop-circle"></i> Release Spot
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
-                            <form method="POST" action="/user/occupy/{{ current_reservation.id }}">
-                                <button type="submit" class="btn btn-success">Mark as Occupied</button>
-                            </form>
-                        {% elif current_reservation.parking_spot.status.value == 'occupied' %}
-                            <div class="alert alert-info">
-                                <strong>OCCUPIED</strong> - Your vehicle is parked.
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-car-front display-4 text-muted"></i>
+                                <h4 class="mt-3 text-muted">No Active Reservation</h4>
+                                <p class="text-muted">You don't have any active parking reservations.</p>
+                                <a href="{{ url_for('user_view_lots') }}" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-plus-circle"></i> Book a Parking Spot
+                                </a>
                             </div>
-                            {% if current_reservation.occupy_time %}
-                                <p><strong>Occupied At:</strong> {{ current_reservation.occupy_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-                                <p><strong>Duration:</strong> {{ format_duration(current_reservation.start_time) }}</p>
-                            {% endif %}
-                            <p>When you leave, please release the spot.</p>
-                            <form method="POST" action="/user/release/{{ current_reservation.id }}">
-                                <button type="submit" class="btn btn-danger">Release Spot</button>
-                            </form>
                         {% endif %}
                     </div>
                 </div>
             </div>
         </div>
-        {% else %}
-        <div class="card">
-            <div class="card-header">
-                <h4>No Active Reservation</h4>
-            </div>
-            <div class="card-body text-center">
-                <p>You don't have any active parking reservations.</p>
-                <a href="/user/lots" class="btn btn-primary">Reserve a Parking Spot</a>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-lightning"></i> Quick Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <a href="{{ url_for('user_view_lots') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                    <i class="bi bi-geo-alt fs-2"></i>
+                                    <span class="mt-2">View Parking Lots</span>
+                                </a>
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <a href="{{ url_for('parking_history') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                    <i class="bi bi-clock-history fs-2"></i>
+                                    <span class="mt-2">Parking History</span>
+                                </a>
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <a href="{{ url_for('user_summary') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                    <i class="bi bi-graph-up fs-2"></i>
+                                    <span class="mt-2">Usage Summary</span>
+                                </a>
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <a href="{{ url_for('logout') }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3">
+                                    <i class="bi bi-box-arrow-right fs-2"></i>
+                                    <span class="mt-2">Logout</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        {% endif %}
+
+        <!-- Information Cards -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-info-circle text-primary"></i> How to Use
+                        </h5>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="bi bi-1-circle text-muted"></i> 
+                                <strong>Book:</strong> Select a parking lot and reserve a spot
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-2-circle text-muted"></i> 
+                                <strong>Occupy:</strong> Click "Occupy Spot" when you arrive
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-3-circle text-muted"></i> 
+                                <strong>Release:</strong> Click "Release Spot" when you leave
+                            </li>
+                            <li>
+                                <i class="bi bi-4-circle text-muted"></i> 
+                                <strong>Pay:</strong> Check your history for billing details
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-exclamation-triangle text-warning"></i> Important Notes
+                        </h5>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="bi bi-dot"></i> 
+                                You can only have one active reservation at a time
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-dot"></i> 
+                                Billing starts from reservation time
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-dot"></i> 
+                                Minimum billing duration is 1 hour
+                            </li>
+                            <li>
+                                <i class="bi bi-dot"></i> 
+                                Remember to release your spot when leaving
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
