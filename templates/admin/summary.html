@@ -11,7 +11,7 @@
         <div class="container">
             <a class="navbar-brand" href="#">VPS Admin</a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+                <a class="nav-link" href="/admin">Dashboard</a>
                 <a class="nav-link" href="/logout">Logout</a>
             </div>
         </div>
@@ -71,7 +71,7 @@
                         {% endif %}
                     </div>
                     <div class="col-md-4 text-center">
-                        <h3 class="text-warning">₹{{ "%.2f"|format(summary.potential_current_revenue) }}</h3>
+                        <h3 class="text-warning">₹{{ "%.2f"|format(summary.potential_revenue) }}</h3>
                         <p><strong>Potential Current Revenue</strong></p>
                         <small class="text-muted">From active sessions</small>
                     </div>

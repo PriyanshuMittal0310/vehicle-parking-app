@@ -62,7 +62,7 @@
             <div class="col-12 col-md-3 mb-3">
                 <div class="card text-center">
                     <div class="card-body">
-                        <h3 class="text-info">₹{{ "%.2f"|format(summary.total_spent) }}</h3>
+                        <h3 class="text-info">{{ '₹' }}{{ "%.2f"|format(summary.total_spent) }}</h3>
                         <p class="card-text">Total Spent</p>
                     </div>
                 </div>
@@ -77,8 +77,8 @@
                         <h5>Cost Analysis</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Current Session Cost:</strong> ₹{{ "%.2f"|format(summary.current_session_cost) }}</p>
-                        <p><strong>Average Cost per Session:</strong> ₹{{ "%.2f"|format(summary.average_cost_per_session) }}</p>
+                        <p><strong>Current Session Cost:</strong> {{ '₹' }}{{ "%.2f"|format(summary.current_session_cost) }}</p>
+                        <p><strong>Average Cost per Session:</strong> {{ '₹' }}{{ "%.2f"|format(summary.average_cost_per_session) }}</p>
                     </div>
                 </div>
             </div>

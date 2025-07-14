@@ -26,11 +26,9 @@ from models.models import (
     User, Admin, ParkingLot, ParkingSpot, Reservation, SpotStatus
 )
 
-# ────────────────────────────────────────────────────────────────
 # Application Configuration & Initialization
-# ────────────────────────────────────────────────────────────────
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 app.config["SECRET_KEY"] = "dev-key-change-me"
 SessionLocal = sessionmaker(bind=engine, future=True)
 
@@ -38,9 +36,7 @@ SessionLocal = sessionmaker(bind=engine, future=True)
 if not Path("models/models.db").exists():
     create_db()
 
-# ────────────────────────────────────────────────────────────────
 # System Administrator Setup
-# ────────────────────────────────────────────────────────────────
 
 def ensure_default_admin():
     """
@@ -61,14 +57,11 @@ def ensure_default_admin():
         )
         db.add(default_admin)
         db.commit()
-        print("✅ Default administrator account created successfully")
 
 # Initialize default administrator
 ensure_default_admin()
 
-# ────────────────────────────────────────────────────────────────
 # Business Logic & Utility Functions
-# ────────────────────────────────────────────────────────────────
 
 def calculate_cost(reservation):
     """
@@ -171,9 +164,8 @@ app.jinja_env.globals.update(
     get_reservation_details=get_reservation_details
 )
 
-# ────────────────────────────────────────────────────────────────
 # Access Control Decorators
-# ────────────────────────────────────────────────────────────────
+
 
 def login_required(view_function):
     """
@@ -205,9 +197,8 @@ def role_required(required_role):
         return role_wrapper
     return role_decorator
 
-# ────────────────────────────────────────────────────────────────
 # Authentication Routes
-# ────────────────────────────────────────────────────────────────
+
 
 @app.route("/")
 def root():
@@ -294,9 +285,9 @@ def logout():
     flash("You have been successfully logged out.")
     return redirect(url_for("login"))
 
-# ────────────────────────────────────────────────────────────────
+
 # Dashboard Routes
-# ────────────────────────────────────────────────────────────────
+
 
 @app.route("/dashboard")
 @login_required
@@ -355,9 +346,7 @@ def admin_dashboard():
         
         return render_template("admin_dashboard.html", stats=dashboard_stats)
 
-# ────────────────────────────────────────────────────────────────
 # User parking functionalities
-# ────────────────────────────────────────────────────────────────
 
 @app.route("/user/lots")
 @login_required
@@ -421,7 +410,7 @@ def reserve_spot(lot_id):
         new_reservation = Reservation(
             user_id=session["user_id"],
             parking_spot_id=available_spot.id,
-            vehicle_number=request.form.get("vehicle_number", "TEMP-123"),
+            vehicle_number="",  # Default to empty string
             start_time=datetime.now(),
             occupy_time=None,
             end_time=None
@@ -441,7 +430,7 @@ def reserve_spot(lot_id):
 def occupy_spot(reservation_id):
     """
     Mark a reserved parking space as occupied.
-    Updates session status and space availability.
+    Updates session status, vehicle number, and space availability.
     """
     with SessionLocal() as db:
         reservation = (
@@ -457,6 +446,15 @@ def occupy_spot(reservation_id):
         if reservation.end_time is not None:
             flash("This parking session has already been completed.")
             return redirect(url_for("user_dashboard"))
+        
+        # Get vehicle number from form
+        vehicle_number = request.form.get("vehicle_number", "").strip()
+        if not vehicle_number:
+            flash("Vehicle number is required to occupy the spot.")
+            return redirect(url_for("user_dashboard"))
+        
+        # Update reservation with vehicle number
+        reservation.vehicle_number = vehicle_number
         
         # Update space status to occupied
         parking_spot = db.get(ParkingSpot, reservation.parking_spot_id)
@@ -499,7 +497,7 @@ def release_spot(reservation_id):
         final_cost = calculate_cost(reservation)
         db.commit()
         
-        flash(f"Parking session completed successfully! Total charge: ${final_cost}")
+        flash(f"Parking session completed successfully! Total charge: ₹{final_cost}")
         return redirect(url_for("user_dashboard"))
 
 @app.route("/user/history")
@@ -601,9 +599,9 @@ def user_summary():
                              summary=summary_data,
                              current_date=datetime.now())
 
-# ────────────────────────────────────────────────────────────────
+
 # Administrative Facility Management
-# ────────────────────────────────────────────────────────────────
+
 
 @app.route("/admin/lots")
 @login_required
@@ -753,9 +751,9 @@ def delete_lot(lot_id):
         flash("Parking facility deleted successfully.")
         return redirect(url_for("list_lots"))
 
-# ────────────────────────────────────────────────────────────────
+
 # Space Management & Monitoring
-# ────────────────────────────────────────────────────────────────
+
 
 @app.route("/admin/lots/<int:lot_id>/spots")
 @login_required
@@ -853,9 +851,9 @@ def sync_lot_spots(lot_id):
         
         return redirect(url_for("lot_spots", lot_id=lot.id))
 
-# ────────────────────────────────────────────────────────────────
+
 # Customer Management
-# ────────────────────────────────────────────────────────────────
+
 
 @app.route("/admin/users")
 @login_required
@@ -881,9 +879,9 @@ def list_users():
         
         return render_template("admin/users.html", users=users_with_reservations)
 
-# ────────────────────────────────────────────────────────────────
+
 # Parking Records & Analytics
-# ────────────────────────────────────────────────────────────────
+
 
 @app.route("/admin/parking-records")
 @login_required
@@ -1278,9 +1276,9 @@ def get_status_css_class(status):
     }
     return status_classes.get(status, 'secondary')
 
-# ────────────────────────────────────────────────────────────────
+
 # Application Entry Point
-# ────────────────────────────────────────────────────────────────
+
 
 if __name__ == "__main__":
     app.run(debug=True)

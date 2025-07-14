@@ -18,26 +18,26 @@ from sqlalchemy.orm import (
     declarative_base, relationship, sessionmaker, object_session
 )
 
-# ────────────────────────────────────────────────────────────────
+
 # Database Configuration & Setup
-# ────────────────────────────────────────────────────────────────
+
 
 DB_PATH = Path(__file__).with_suffix(".db")
 engine = create_engine(f"sqlite:///{DB_PATH}?check_same_thread=False", echo=False, future=True, pool_pre_ping=True)
 Base = declarative_base()
 
-# ────────────────────────────────────────────────────────────────
+
 # Custom Enumerations
-# ────────────────────────────────────────────────────────────────
+
 
 class SpotStatus(str, Enum):
     AVAILABLE = "available"
     RESERVED = "reserved"
     OCCUPIED = "occupied"
 
-# ────────────────────────────────────────────────────────────────
+
 # Core Data Models
-# ────────────────────────────────────────────────────────────────
+
 
 class User(Base):
     """
@@ -191,9 +191,9 @@ class Reservation(Base):
     def __repr__(self):
         return f"<Reservation(user_id={self.user_id}, spot_id={self.parking_spot_id})>"
 
-# ────────────────────────────────────────────────────────────────
+
 # Automated Space Management System
-# ────────────────────────────────────────────────────────────────
+
 
 def _manage_parking_spots(target, value, oldvalue, *_):
     """
@@ -224,12 +224,9 @@ def _manage_parking_spots(target, value, oldvalue, *_):
             .count()
         )
         
-        print(f"🔄 Managing spots for '{target.name}': Current={existing_spots_count}, Target={value}")
-        
         if value > existing_spots_count:
             # Add new parking spots
             spots_to_add = value - existing_spots_count
-            print(f"   ➕ Creating {spots_to_add} new parking spots")
             
             for spot_number in range(existing_spots_count + 1, value + 1):
                 new_spot = ParkingSpot(
@@ -238,12 +235,10 @@ def _manage_parking_spots(target, value, oldvalue, *_):
                     status=SpotStatus.AVAILABLE
                 )
                 sess.add(new_spot)
-                print(f"      ✅ Created spot {new_spot.spot_number}")
                 
         elif value < existing_spots_count:
             # Remove excess spots (only if available)
             spots_to_remove = existing_spots_count - value
-            print(f"   ➖ Attempting to remove {spots_to_remove} excess spots")
             
             # Get spots to potentially remove (highest numbers first)
             excess_spots = (
@@ -261,34 +256,28 @@ def _manage_parking_spots(target, value, oldvalue, *_):
                 if spot.status == SpotStatus.AVAILABLE:
                     sess.delete(spot)
                     successfully_removed += 1
-                    print(f"      ✅ Removed spot {spot.spot_number}")
+                
                 else:
                     blocked_spots.append(f"{spot.spot_number}({spot.status.value})")
-                    print(f"      ❌ Cannot remove spot {spot.spot_number} - Status: {spot.status.value}")
-            
+                
             # Adjust capacity if we couldn't remove all requested spots
             if blocked_spots:
                 actual_capacity = existing_spots_count - successfully_removed
-                print(f"   ⚠️  Could only remove {successfully_removed}/{spots_to_remove} spots")
-                print(f"   ⚠️  Blocked spots: {', '.join(blocked_spots)}")
-                print(f"   ⚠️  Adjusting capacity to {actual_capacity}")
                 target.number_of_spots = actual_capacity
         
         # Apply changes to database
         sess.flush()
-        print(f"   ✅ Spot management completed for '{target.name}'")
         
     except Exception as error:
-        print(f"❌ Error managing spots for '{target.name}': {str(error)}")
         sess.rollback()
         raise
 
 # Register the automated space management system
 event.listen(ParkingLot.number_of_spots, 'set', _manage_parking_spots)
 
-# ────────────────────────────────────────────────────────────────
+
 # Database Initialization Helper
-# ────────────────────────────────────────────────────────────────
+
 
 def create_db() -> None:
     """
@@ -296,7 +285,6 @@ def create_db() -> None:
     the initial database structure.
     """
     Base.metadata.create_all(engine)
-    print(f"✅ Database initialized successfully at {DB_PATH.resolve()}")
 
 if __name__ == "__main__":
     create_db()

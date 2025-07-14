@@ -89,7 +89,7 @@
                                 </td>
                                 <td>
                                     {% if record.cost > 0 %}
-                                        <strong class="text-success">${{ "%.2f"|format(record.cost) }}</strong>
+                                        <strong class="text-success">₹{{ "%.2f"|format(record.cost) }}</strong>
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}

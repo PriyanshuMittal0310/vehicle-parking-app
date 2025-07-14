@@ -128,7 +128,7 @@
                                         {% if spot_data.current_reservation %}
                                         <br><strong>👤 User:</strong> {{ spot_data.current_reservation.user.full_name }}
                                         <br><strong>⏱️ Duration:</strong> {{ spot_data.status_info.duration }}
-                                        <br><strong>💰 Current Cost:</strong> ${{ "%.2f"|format(spot_data.status_info.cost) }}
+                                        <br><strong>💰 Current Cost:</strong> ₹{{ "%.2f"|format(spot_data.status_info.cost) }}
                                         {% endif %}
                                     </p>
                                     
@@ -170,7 +170,7 @@
                                     
                                     <p class="card-text small">
                                         <strong>📍 Address:</strong> {{ lot_data.lot.address_line_1 }}<br>
-                                        <strong>💰 Rate:</strong> ${{ lot_data.lot.price_per_hour }}/hour<br>
+                                        <strong>💰 Rate:</strong> ₹{{ lot_data.lot.price_per_hour }}/hour<br>
                                         <strong>🏗️ Capacity:</strong> {{ lot_data.total_spots }} spots
                                     </p>
                                     
@@ -263,7 +263,7 @@
                                         </span>
                                     </td>
                                     <td>{{ res_data.duration_formatted }}</td>
-                                    <td><strong>${{ "%.2f"|format(res_data.cost) }}</strong></td>
+                                    <td><strong>₹{{ "%.2f"|format(res_data.cost) }}</strong></td>
                                     <td>
                                         <small>{{ res_data.reservation.start_time.strftime('%Y-%m-%d %H:%M') }}</small>
                                     </td>
